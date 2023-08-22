@@ -1,0 +1,193 @@
+---
+title: "Vergangenes Glück oder Pech?"
+lang: de
+author: "Ihr Name"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    toc: true
+    html-math-method: katex
+  pdf:
+    toc: true
+    number-sections: false
+    colorlinks: true
+    papersize: a4
+---
+
+```{r setup}
+#| include: false
+library(mosaic)
+# Zufallszahlengenerator festlegen
+set.seed(1896)
+```
+
+# Vergangenes Glück?
+
+Besuchen Sie die Seite [https://fomshinyapps.shinyapps.io/Lottotipp/](https://fomshinyapps.shinyapps.io/Lottotipp/).
+
+Wählen Sie dort 6 aus 49 Zahlen aus und notieren Sie sich den Anteil der Spiele an denen Sie mindestens drei Richtige hatten, z.B. `0.0199649`:
+
+```{r}
+# Hier bitte den Anteil Ziehungen mit Gewinn eintragen
+p_gewinn <- 0.0199649
+```
+
+Dem Abgleich *Ihres* Tipps mit den Lotto&copy;6aus49 Zahlen von 1955 bis Ende 2022 liegen $n = 4662$ Ziehungen zugrunde.
+
+```{r}
+n <- 4662
+```
+
+#### Frage
+
+- Berechnen Sie, an wie vielen Tagen Sie gejubelt hätten -- sofern Sie 1955 schon spielberechtigt gewesen wären.
+
+```{r}
+
+```
+
+## Gewinnwahrscheinlichkeit
+
+Es werden 6 aus 49 Zahlen gezogen. Für die erste Kugel gibt es damit 49 Möglichkeiten. Da diese nicht zurückgelegt wird, gibt es für die nächste Kugel 48 Möglichkeiten. Für 6 Kugeln ergeben sich damit
+
+```{r}
+49*48*47*46*45*44
+```
+
+Möglichkeiten. 
+
+Da allerdings die Reihenfolge der Ziehung keine Rolle spielt, haben wir für die erste gezogenene Zahl 6 Möglichkeiten der Positionierung, für die zweite 5 usw. Insgesamt ergeben sich für 6 Zahlen aus 49
+
+```{r}
+(49*48*47*46*45*44) / (6*5*4*3*2*1)
+```
+
+Möglichkeiten -- ohne Zurücklegen und ohne Berücksichtigung der Reihenfolge.
+
+Die Anzahl der möglichen Kombinationen, $k$ Zahlen aus $n$ auszuwählen kann in `R` direkt über den Befehl `choose()` bestimmt werden:
+
+```{r}
+choose(49, 6)
+```
+
+Um die *theoretische* Gewinnwahrscheinlichkeit zu berechnen, müssen wir bedenken, dass wir z.B. bei drei Richtigen 3 der 6 gezogenen Zahlen gewählt werden und 3 aus den 43 nicht gezogenen. Damit ergibt sich für die Wahrscheinlichkeit 3 Richtige zu haben:
+
+```{r}
+(choose(6, 3) * choose(43, 3)) / choose(49, 6)
+```
+
+Um zu bestimmen, wie wahrscheinlich es ist, mindestens 3 Richtige zu haben, müssen die Wahrscheinlichkeiten für 3, 4, 5 und 6 Richtige addiert werden:
+
+```{r}
+pi_gewinn <- 
+  (choose(6, 3) * choose(43, 3)) / choose(49, 6) + # 3 Richtige, 3 Falsche
+  (choose(6, 4) * choose(43, 2)) / choose(49, 6) + # 4 Richtige, 2 Falsche
+  (choose(6, 5) * choose(43, 1)) / choose(49, 6) + # 5 Richtige, 1 Falsche
+  (choose(6, 6) * choose(43, 0)) / choose(49, 6)   # 6 Richtige, 0 Falsche
+pi_gewinn
+```
+
+#### Fragen
+
+- Hätten Sie - in der Vergangenheit - mit Ihren Zahlen, bezogen auf den Anteil Ziehungen mit einem Gewinn, eher Glück oder Pech gehabt?
+
+- Wenn wir davon ausgehen, dass die Gewinnwahrscheinlichkeit bei $\pi = `r pi_gewinn`$ liegt. Muss dann der Anteil der Gewinne $p$ auch bei $`r pi_gewinn`$ liegen?
+
+- Welche Annahme muss erfüllt sein, damit obige Berechnung der (theoretischen) Gewinnwahrscheinlichkeit so funktioniert?
+
+## Zufallssimulation
+
+Eine einfache Möglichkeit, eine Erfolgswahrscheinlichkeit von $\pi=0.5$ zu simulieren ist der Münzwurf. Werfen Sie bitte $8\times$ eine Münze und tragen Sie unter [https://forms.gle/dXdhzL5YqttY46wu5](https://forms.gle/dXdhzL5YqttY46wu5) ein, wie oft Sie Kopf (Wappen) geworfen haben.
+
+
+#### Fragen
+
+- Was ist bei acht Würfen wahrscheinlicher: $4\times$ Kopf oder $8\times$ Kopf?
+
+- Was müssen wir beachten, wenn wir die Gewinnwahrscheinlichkeit beim Lotto simulieren wollen?
+
+***
+
+Simulieren wir $3\times$ (`do(3)*`) $n = `r n`$ Ziehungen mit einer Gewinnwahrscheinlichkeit von  $\pi = `r pi_gewinn`$ (`(rflip()`):
+
+```{r}
+do(3) * rflip(n = n, prob = pi_gewinn)
+```
+
+#### Frage
+
+- Ist der Anteil der Gewinne (`prop`) in den simulierten Ziehungen bei fester Gewinnwahrscheinlichkeit $\pi$ konstant?
+
+***
+
+Führen wir 10000 solche Simulationen durch und speichern das Ergebnis als `Nullvtlg`:
+
+```{r}
+Nullvtlg <- do(10000)* rflip(n = n, prob = pi_gewinn)
+# Obere Beobachtungen
+head(Nullvtlg)
+```
+
+Als Visualisierung der simulierten Gewinnanteile bei $n = `r n`$ Ziehungen mit $\pi = `r pi_gewinn`$ bietet sich ein Histogramm an:
+
+#### Frage
+
+- Warum bietet sich zur Visualisierung der Variable `prop` aus der (simulierten) Datentabelle `Nullvtlg` ein Histogramm an?
+
+***
+
+```{r}
+gf_histogram( ~ prop, data   = Nullvtlg,
+                      center = pi_gewinn)
+```
+
+Auch ohne Manipulation, oder dass Sie ein besonderer Glückspilz oder Pechvogel sind, kommt es rein zufällig vor, dass der Anteil der Richtigen in einer Stichprobe variiert.
+
+#### Frage
+
+- Über `gf_vline(xintercept = ___)` kann eine vertikale Linie gezeichnet werden. Ergänzen Sie den Code so, dass Ihr Gewinnanteil eingezeichnet wird. Ist Ihr Ergebnis besonders außergewöhnlich?
+
+```{r}
+gf_histogram( ~ prop, data = Nullvtlg,
+              center = pi_gewinn) 
+
+```
+
+## p-Wert
+
+Angenommen es gelte $\pi = `r pi_gewinn`$. Wie wahrscheinlich ist dann eine Stichprobe vom Umfang $n = `r n`$, mit einer mindestens so großen Abweichung zwischen $p$ und $\pi$ wie in Ihrem Ergebnis?
+
+```{r}
+# Beobachtete Abweichung
+abweichung <- p_gewinn - pi_gewinn
+abweichung
+
+# Abweichung in Simulationen ergänzen
+Nullvtlg <- Nullvtlg %>%
+  mutate(abweichung0 = prop - pi_gewinn)
+
+# p-Wert
+pwert <- prop( ~ abs(abweichung0) >= abs(abweichung), data = Nullvtlg)
+pwert
+```
+
+#### Fragen
+
+- Ein Ergebnis wird *statistisch signifikant zum Niveau $\alpha=5\%$* genannt, wenn der p-Wert kleiner als $\alpha$ ist. Ist Ihr Ergebnis statistisch signifikant?
+
+- Ist die Wahrscheinlichkeit, dass mindestens eine:r im Kurs ein signifikantes Ergebnis hat kleiner als 5%?
+
+- Wie müsste die Nullyhpothese lauten, wenn Sie zeigen wollten, dass Sie statistisch signifikant Pech haben?
+
+- Angenommen Sie würden auf die vorherige Frage einen sehr kleinen p-Wert erhalten, z.B. kleiner als 5%. Außerdem angenommen in Wirklichkeit gilt $\pi = `r pi_gewinn`$. Liegt dann ein Fehler vor? Und wenn ja, welcher Art?
+
+
+## Hinweise
+
+- Wenn wir als Kurs ein zufälliges (!) signifikantes Ergebnis einer Teilnehmer:in berichten, und die vielen nicht-signifikanten verschweigen, würden wir eine Form von **p-Hacking** betreiben.
+
+- Die Teilnehmer:in, die ein signifikantes Ergebnis hat, hat eine größere Wahrscheinlichkeit zu veröffentlichen als die, die kein signifikantes Ergebnis haben. So entsteht **Publication Bias**.
+
+- Allein aus der Tatsache, dass in der Vergangenheit bestimmte Zahlen häufiger oder seltener gezogen worden sind, lässt sich nicht schließen, dass diese Zahlen auch in Zukunft häufiger oder seltener gezogen werden: **Spielerfehlschluss**.
+
+
